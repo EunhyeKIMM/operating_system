@@ -1,23 +1,32 @@
 from _thread import *
+# from file_sender import file_info
 import socket 
 
 HOST = "127.0.0.1"
 PORT = 6000
 FILE_PATH = "c:/Temp/received/data"
 
+import json
+
 def receive_thread(client_socket, addr):
     try:
         ## 파일 크기 수신
-        size = client_socket.recv(1024)
-        size = int(size.decode())
-        print("수신할 파일 크기", size)
+        # size = client_socket.recv(1024)
+        # size = int(size.decode())
+        # print("수신할 파일 크기", size)
+        # json 문자열 수신
+        finfo = client_socket.recv(1024).decode()
+        finfo = json.loads(finfo)
+        print(f'파일명: {finfo.get("file_name")}, 파일크기: {finfo.get("file_size")}')
+        size = finfo.get("file_size")
+        fpath = "c:/Temp/received/" + finfo.get("file_name")
 
         # 준비상태 전송
         client_socket.send("ready".encode())
 
         # 파일 수신 
         total_size = 0 
-        with open(FILE_PATH, "wb") as f: 
+        with open(fpath, "wb") as f: 
             while True:
                 data = client_socket.recv(1024)
                 f.write(data)
@@ -30,7 +39,7 @@ def receive_thread(client_socket, addr):
     finally:
         client_socket.close()
 
-with socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM) as s:
+with socket.socket() as s:
     try:
         s.bind((HOST, PORT))
         s.listen(1)
